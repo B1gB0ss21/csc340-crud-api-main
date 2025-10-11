@@ -98,11 +98,11 @@ Gets a list of dogs with a name that contains the given string.
 ]
 ```
 
-4. ### [`/major/{major}`](http://localhost:8080/dogs/breed/Golden Doodle) (GET)
+4. ### [`/breed/{breed}`](http://localhost:8080/dogs/breed/Golden Doodle) (GET)
 Gets a list of dogs for a breed.
 
 #### Parameters
-- path variable: `major` &lt; String &gt; - REQUIRED
+- path variable: `breed` &lt; String &gt; - REQUIRED
 
 #### Response - A JSON array of Dog objects.
 
