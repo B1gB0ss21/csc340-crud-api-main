@@ -6,25 +6,25 @@
 - Hibernate: Hibernate is a popular ORM framework that implements JPA. It simplifies database operations by mapping Java objects to database tables and handling queries efficiently.
 Spring ORM allows seamless integration of Hibernate and JPA, making database interactions more manageable and reducing boilerplate code.
 ### DogsX Java classes have different purposes: Separation of concerns!
-- [Entity]
+- [Entity] (https://github.com/B1gB0ss21/csc340-crud-api-main/blob/main/src/main/java/com/csc340/demo/Dog/Dog.java)
   - The Dog class is annotated as an `@Entity `. This is used to map class attributes to database tables and SQL types.
   - We also annotated with `@Table` to give Hibernate directions to use this specific table name. This is optional but it helps with naming conventions.
   - Any Entity must have at least one attribute that is annotated as an `@Id`. In our case it's conveniently the `dogId` attribute.
     - We are also using an autogeneration strategy for the ID. This way we are not manually assigning IDs to our Dogs. This is optional.
        - For this reason, we also added a constructor to make a Dog without an ID.
   - An Entity must have a no-argument constructor.
-- [Repository]
+- [Repository](https://github.com/B1gB0ss21/csc340-crud-api-main/blob/main/src/main/java/com/csc340/demo/Dog/DogRepository.java)
   - We are using an extension of the JPA Repository that comes with prebuilt database operations such as select all, select by id, select by any other reference, insert, delete, etc.
   - Annotate it as a `@Repository`.
   - We parametrize this using our object and its ID type.
     - `public interface DogRepository extends JpaRepository<Dog, Long>` => We want to apply the JPA repository operations on the `Dog` type. The `Dog` has an ID of type `long`.
   - If we need special database queries that are not the standard ones mentioned above, we can create [a method with a special purpose query] as shown. This is an interface so no implementation body.
-- [Service]
+- [Service] (https://github.com/B1gB0ss21/csc340-crud-api-main/blob/main/src/main/java/com/csc340/demo/Dog/DogService.java)
   - Annotated as a `@Service`.
   - It is the go-between from controller to database. In here we define what functions we need from the repository. A lot of the functions are default functions that our repository inherits from JPA (save, delete, findAll, findByX), some of them are custom made (getDogBreed, getDogByName).
   - It asks the repository to perform SQL queries.
   - The Repository class is [`@Autowired`]. This is for managing the dependency to the repository. Do not use a constructor to make a Repository object, you will get errors.
-- [Rest Controller]
+- [Rest Controller] (https://github.com/B1gB0ss21/csc340-crud-api-main/blob/main/src/main/java/com/csc340/demo/Dog/DogController.java)
   - Annotated as a `@RestController`.
   - It asks the Service class to perform data access functions.
   - The Service class is [`@Autowired`]
