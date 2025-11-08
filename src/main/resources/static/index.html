@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Animals • Gallery</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg sticky-top border-bottom border-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/index.html">Animal Gallery</a>
+      <a class="btn btn-sm btn-primary ms-auto" href="/new-animal-form.html">Add</a>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="row mb-3">
+      <div class="col-12">
+        <form id="searchForm" class="d-flex gap-2" autocomplete="off">
+          <input id="searchInput" class="form-control" type="search" name="q" placeholder="Search by name..." />
+          <button id="clearBtn" class="btn btn-outline-secondary" type="button">Clear</button>
+          <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="grid" class="row g-3"></div>
+  </main>
+
+  <footer class="mt-5 py-4">
+    <div class="container"><small>© 2025 Animal Gallery</small></div>
+  </footer>
+
+  <script type="module">
+    function esc(s){ return s?String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])):''; }
+
+    function card(a){
+      const id = a.id ?? a.animalId ?? a.animalID ?? a.animal_id ?? '';
+      const img = esc(a.imageUrl || '/Images/default.jpg');
+      const name = esc(a.name ?? 'Unnamed');
+      const type = esc(a.type ?? '—');
+      const desc = esc(a.description ?? '');
+      const edit = id ? `<a class="btn btn-sm btn-outline-info" href="/edit.html?id=${encodeURIComponent(id)}">Edit</a>` : '';
+      const view = id ? `<a class="btn btn-sm btn-primary" href="/details.html?id=${encodeURIComponent(id)}">View</a>` : '';
+      const del = id ? `<button class="btn btn-sm btn-outline-danger" data-del="${encodeURIComponent(id)}">Delete</button>` : '';
+      return `
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card h-100 shadow-sm">
+            <img src="${img}" class="card-img-top" alt="${name}" style="height:190px;object-fit:cover;">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-start">
+                <h5 class="card-title mb-1">${name}</h5>
+                <small class="text-muted">${type}</small>
+              </div>
+              <p class="card-text text-secondary small mt-2">${desc.slice(0,120)}${desc.length>120?'…':''}</p>
+              <div class="mt-auto d-flex gap-2">${view}${edit}${del}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    let currentQuery = '';
+
+    // improved delete: surface server error body
+    async function handleDelete(id) {
+      if (!id) return;
+      if (!confirm('Delete this animal?')) return;
+      try {
+        const res = await fetch('/animals/' + encodeURIComponent(id), { method: 'DELETE' });
+        if (!res.ok) {
+          const text = await res.text().catch(()=> '');
+          throw new Error(text || `HTTP ${res.status}`);
+        }
+        // reload with current query
+        await load(currentQuery);
+      } catch (err) {
+        console.error('Delete error', err);
+        alert('Delete failed: ' + (err.message || 'unknown error'));
+      }
+    }
+
+    // load list, optional query q
+    async function load(q = '') {
+      currentQuery = q;
+      const grid = document.getElementById('grid');
+      try {
+        const url = q ? `/animals?q=${encodeURIComponent(q)}` : '/animals';
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('Failed to load: ' + r.status);
+        const list = await r.json();
+        grid.innerHTML = list.length ? list.map(card).join('') : '<div class="col-12"><div class="alert alert-info">No animals found.</div></div>';
+        // attach delete handlers (use event listeners)
+        grid.querySelectorAll('button[data-del]').forEach(btn=>{
+          btn.addEventListener('click', ()=> handleDelete(btn.getAttribute('data-del')) );
+        });
+      } catch(e){
+        console.error(e);
+        grid.innerHTML = '<div class="col-12"><div class="alert alert-danger">Could not load animals.</div></div>';
+      }
+    }
+
+    // debounce helper
+    function debounce(fn, wait=300){
+      let t;
+      return (...args)=>{ clearTimeout(t); t = setTimeout(()=>fn(...args), wait); };
+    }
+
+    // wiring search UI
+    window.addEventListener('DOMContentLoaded', ()=>{
+      const form = document.getElementById('searchForm');
+      const input = document.getElementById('searchInput');
+      const clear = document.getElementById('clearBtn');
+      // initial load
+      load();
+
+      form.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        load(input.value.trim());
+      });
+
+      clear.addEventListener('click', ()=>{
+        input.value = '';
+        load();
+      });
+
+      // optional: live search with debounce
+      input.addEventListener('input', debounce(()=>{
+        load(input.value.trim());
+      }, 350));
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

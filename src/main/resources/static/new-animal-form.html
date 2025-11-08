@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Add Animal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg sticky-top border-bottom border-dark">
+    <div class="container">
+      <a class="navbar-brand text-light fw-semibold" href="/index.html">Animal Gallery</a>
+    </div>
+  </nav>
+
+  <main class="container py-4" style="max-width: 900px;">
+    <h1 class="section-title mb-3">Create New Animal</h1>
+
+    <!-- status area -->
+    <div id="status" class="alert d-none" role="alert"></div>
+
+    <!-- NOTE: include enctype for progressive enhancement; JS sends FormData -->
+    <form id="form" class="vstack gap-3" enctype="multipart/form-data" novalidate>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Name</label>
+          <input class="form-control" name="name" required placeholder="e.g., Zeus">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Type / Breed</label>
+          <input class="form-control" name="type" placeholder="e.g., German Shepherd">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Age</label>
+          <input class="form-control" type="number" name="age" min="0" placeholder="e.g., 4">
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Image URL (optional)</label>
+          <input class="form-control" name="imageUrl" placeholder="/Images/german-shepherd.jpg">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Upload Image (optional)</label>
+          <input class="form-control" type="file" name="picture" accept="image/*">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" name="description" rows="4" placeholder="Short bio or notes"></textarea>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button id="saveBtn" class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-secondary" href="/index.html">Cancel</a>
+      </div>
+    </form>
+  </main>
+
+  <footer class="mt-5 py-4">
+    <div class="container d-flex flex-wrap gap-3 align-items-center justify-content-between">
+      <span>© 2025 Animal Gallery</span>
+      <span class="small">CSR via <code>fetch()</code></span>
+    </div>
+  </footer>
+
+  <script type="module">
+    const baseUrl = '/animals'; // server endpoint
+
+    const form = document.getElementById('form');
+    const statusBox = document.getElementById('status');
+    const saveBtn = document.getElementById('saveBtn');
+
+    function showStatus(kind, msg) {
+      statusBox.className = 'alert alert-' + kind;
+      statusBox.textContent = msg;
+      statusBox.classList.remove('d-none');
+    }
+
+    async function createAnimal(formData) {
+      const res = await fetch(baseUrl, {
+        method: 'POST',
+        body: formData // DO NOT set Content-Type header when sending FormData
+      });
+
+      const text = await res.text().catch(()=>'');
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch {}
+
+      if (!res.ok) {
+        console.error('Create failed', res.status, text);
+        throw new Error(`POST ${baseUrl} → ${res.status} ${res.statusText}\n${text}`);
+      }
+      return data ?? {};
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusBox.classList.add('d-none');
+      if (!form.reportValidity()) return;
+
+      // Build FormData from the form (includes file input named "picture")
+      const fd = new FormData(form);
+
+      // Convert age to a number (optional; server will attempt binding)
+      if (fd.get('age')) fd.set('age', Number(fd.get('age')));
+
+      // UI: disable button + spinner
+      saveBtn.disabled = true;
+      const original = saveBtn.innerHTML;
+      saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving…';
+
+      try {
+        const saved = await createAnimal(fd);
+        showStatus('success', 'Created! Redirecting to details…');
+        const savedId = saved.id ?? saved.animalId ?? saved.animalID;
+        const dest = savedId ? `/details.html?id=${savedId}` : '/index.html';
+        setTimeout(()=> location.href = dest, 500);
+      } catch (err) {
+      showStatus('danger', err.message || 'Create failed.');
+      } finally {
+  saveBtn.disabled = false;
+  saveBtn.innerHTML = original;
+}
+      });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
